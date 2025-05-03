@@ -23,7 +23,7 @@ def __boxes(frame, box_size, threshold) -> list[tuple]:
             if box_sum > threshold:
                 boxes_arr.append([(i, j), (i + box_size, j + box_size)])
 
-    return boxes_arr
+    return __merge_boxes(boxes_arr)
 
 
 def __box_builder(box_size, frame, row_index, item_index):
