@@ -40,10 +40,13 @@ def __box_builder(box_size, frame, row_index, item_index):
 def __merge_boxes(boxes: list[tuple]) -> list[tuple]:
     done = False
     while not done:
-        box = boxes.pop()
+        done = True
 
-        for other_box in boxes:
+        box = boxes[0]
+        for other_box in boxes[1:]:
             if __overlap(box, other_box):
+                done = False
+                boxes.remove(box)
                 boxes.remove(other_box)
 
                 top_left = (min(box[0][0], other_box[0][0]), min(box[0][1], other_box[0][1]))
