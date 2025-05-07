@@ -1,4 +1,8 @@
-def draw_boxes(frame: list[list[int]], box_size: int = 8, threshold: int = 25):
+import logging
+
+logger = logging.getLogger(__name__)
+
+def draw_boxes(frame: list[list[int]], box_size: int = 4, threshold: int = 4):
     for box in __boxes(frame, box_size, threshold):
         top_left, bottom_right = box
 
@@ -38,6 +42,10 @@ def __box_builder(box_size, frame, row_index, item_index):
 
 
 def __merge_boxes(boxes: list[tuple]) -> list[tuple]:
+    if not boxes:
+        logging.debug("Empty box list cannot be merged.")
+        return boxes
+
     done = False
     while not done:
         done = True

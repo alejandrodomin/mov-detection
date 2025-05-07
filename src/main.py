@@ -6,7 +6,7 @@ from src.transformer import transformer
 logger = logging.getLogger(__name__)
 
 def main():
-    logging.basicConfig(level=logging.NOTSET)
+    logging.basicConfig(level=logging.INFO)
 
     parser = argparse.ArgumentParser(
         description="Simple movement based edge detection. Use the <Q> key to escape window.")
