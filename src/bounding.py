@@ -25,7 +25,10 @@ def __boxes(frame, box_size, threshold) -> list[tuple]:
         for j in range(0, len(frame[i]) - box_size, box_size):
             box = __box_builder(box_size, frame, i, j)
 
-            box_sum = sum([sum(row) for row in box]) / box_size ** 2
+            box_sum = 0
+            for row in box:
+                box_sum += np.sum(row, dtype=np.uint16) / box_size ** 2
+
             if box_sum > threshold:
                 boxes_arr.append([(i, j), (i + box_size, j + box_size)])
 
