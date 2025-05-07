@@ -1,7 +1,10 @@
 import argparse
 import logging
 
-from src.transformer import transformer
+import cv2
+
+from src.bounding import draw_boxes
+from src.filter import mov_filter
 
 logger = logging.getLogger(__name__)
 
@@ -30,8 +33,33 @@ def main():
     fr = fr if 0 < fr <= 1000 else 20
 
     logger.info(f"Starting movement detection on file {file}")
-    transformer(live, file, fr, fltr)
+    if not live:
+        capture = cv2.VideoCapture(file)
+    else:
+        capture = cv2.VideoCapture(0)
 
+    last_frame = None
+    while capture.isOpened():
+        ret, frame = capture.read()
+        if not ret:
+            break
+
+        cv2.namedWindow('Transformed', cv2.WINDOW_NORMAL)
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+        if last_frame is not None:
+            transformed_frame = mov_filter(gray, last_frame, fltr)
+            boxed_frame = draw_boxes(transformed_frame)
+
+            cv2.imshow('Transformed', boxed_frame)
+
+            if cv2.waitKey(1000 // fr) & 0xFF == ord('q'):
+                break
+
+        last_frame = gray
+
+    capture.release()
+    cv2.destroyAllWindows()
 
 if __name__ == '__main__':
     main()

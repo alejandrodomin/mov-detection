@@ -1,5 +1,7 @@
 import logging
 
+import numpy as np
+
 logger = logging.getLogger(__name__)
 
 def draw_boxes(frame: list[list[int]], box_size: int = 4, threshold: int = 4):
