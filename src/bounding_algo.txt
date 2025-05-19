@@ -1,0 +1,14 @@
+# based on Suzuki Contour Algo and the Fast Countour Algo paper that was linked
+
+loop over matrix until you find a pixel value greater than zero
+mark as your starting point
+
+check all valid directions around this pixel of value greater than zero
+add those into a queue
+loop over this until the queue is empty
+while you loop check the min and max for coordinates this will give us our upper left and lower right combos
+
+add the new pair of coordinates into a dont check again list
+continue looping over the matrix and whenever a pixel is within the don't check again box skip it over
+
+repeat from step 1 until all pixel clusters are found. 
