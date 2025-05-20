@@ -1,11 +1,11 @@
 demo-live:
-	python main.py --live --frame_rate 60
+	python src/main.py --live --frame_rate 60
 
 demo-fish:
-	python main.py --input_file ./video/fish.mp4
+	python src/main.py --input_file ./data/video/fish.mp4
 
 demo-balloons:
-	python main.py --input_file ./vide/balloons.mp4  
+	python src/main.py --input_file ./data/video/balloons.mp4
 
 debug:
-	python -m pdb main.py --input_file ./video/balloons.mp4
+	python -m pdb src/main.py --input_file ./data/video/balloons.mp4

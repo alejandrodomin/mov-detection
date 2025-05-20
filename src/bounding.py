@@ -1,80 +1,58 @@
 import logging
-
-import numpy as np
+from collections import deque
 
 logger = logging.getLogger(__name__)
 
-def draw_boxes(frame: list[list[int]], box_size: int = 4, threshold: int = 4):
-    for box in __boxes(frame, box_size, threshold):
-        top_left, bottom_right = box
 
-        for row in range(top_left[0], bottom_right[0]):
-            frame[row][top_left[1]] = 255
-            frame[row][bottom_right[1]] = 255
+def bounding_boxes(frame: list[list[int]]) -> list[tuple[tuple]]:
+    y_bound, x_bound = len(frame), len(frame[0])
+    visited = set()
+    boxes = []
 
-        for column in range(top_left[1], bottom_right[1]):
-            frame[top_left[0]][column] = 255
-            frame[bottom_right[1]][column] = 255
+    for y, row in enumerate(frame):
+        for x, item in enumerate(row):
+            if item > 150 and (x, y) not in visited:
+                visited.add((x, y))
+                queue = deque([(x, y)])
 
-    return frame
+                top_left = (x_bound, y_bound)
+                bot_rght = (0, 0)
 
-def __boxes(frame, box_size, threshold) -> list[tuple]:
-    boxes_arr = []
+                while queue:
+                    coord = queue.popleft()
+                    for (ii, ri) in __valid_moves(coord, (x_bound, y_bound), visited):
+                        if frame[ri][ii] > 0:
+                            queue.append((ii, ri))
+                            visited.add((ii, ri))
 
-    for i in range(0, len(frame) - box_size, box_size):
-        for j in range(0, len(frame[i]) - box_size, box_size):
-            box = __box_builder(box_size, frame, i, j)
+                            top_left = (min(top_left[0], ii), min(top_left[1], ri))
+                            bot_rght = (max(bot_rght[0], ii), max(bot_rght[1], ri))
 
-            box_sum = 0
-            for row in box:
-                box_sum += np.sum(row, dtype=np.uint16) / box_size ** 2
-
-            if box_sum > threshold:
-                boxes_arr.append([(i, j), (i + box_size, j + box_size)])
-
-    return __merge_boxes(boxes_arr)
-
-
-def __box_builder(box_size, frame, row_index, item_index):
-    box = []
-    for i in range(box_size):
-        box_row = []
-        for j in range(box_size):
-            box_row.append(frame[row_index + i][item_index + j])
-
-        box.append(box_row)
-    return box
-
-
-def __merge_boxes(boxes: list[tuple]) -> list[tuple]:
-    if not boxes:
-        logging.debug("Empty box list cannot be merged.")
-        return boxes
-
-    done = False
-    while not done:
-        done = True
-
-        box = boxes[0]
-        for other_box in boxes[1:]:
-            if __overlap(box, other_box):
-                done = False
-                boxes.remove(box)
-                boxes.remove(other_box)
-
-                top_left = (min(box[0][0], other_box[0][0]), min(box[0][1], other_box[0][1]))
-                bottom_right = (max(box[1][0], other_box[1][0]), max(box[1][1], other_box[1][1]))
-
-                boxes.append((top_left, bottom_right))
-                break
+                boxes.append((top_left, bot_rght))
 
     return boxes
 
 
-def __overlap(box, other_box):
-    top_left_box, bottom_right_box = box
-    top_left_other, bottom_right_other = other_box
+def __valid_moves(coordinate: tuple, bounds: tuple, visited) -> list[tuple]:
+    x, y = coordinate
+    x_bound, y_bound = bounds
 
-    # TODO: I know there needs to be more check here. But I don't feel like thinking about it now.
-    return top_left_box[0] <= top_left_other[0] <= bottom_right_other[0] or top_left_box[1] <= top_left_other[1] <= \
-        bottom_right_other[1]
+    v_moves = []
+    moves = [(x - 1, y - 1), (x, y - 1), (x + 1, y - 1), (x + 1, y),
+             (x + 1, y + 1), (x, y + 1), (x - 1, y + 1), (x - 1, y)]
+
+    for (x, y) in moves:
+        if 0 <= x < x_bound and 0 <= y < y_bound and (x, y) not in visited:
+            v_moves.append((x, y))
+
+    return v_moves
+
+if __name__=='__main__':
+    matrix = [[0, 0, 0, 0, 0],
+              [0, 0, 1, 1, 0],
+              [0, 0, 1, 1, 0],
+              [0, 1, 0, 0, 0],
+              [0, 0, 0, 0, 1]]
+
+    for (top_left, bottom_right) in bounding_boxes(matrix):
+        print(f"Top left {top_left} bottom right {bottom_right}")
