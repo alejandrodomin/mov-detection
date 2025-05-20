@@ -8,6 +8,6 @@ Movement detection based on difference between frames.
 
 ### Demo
 
-|             Original              |           Transformed            |
-|:---------------------------------:|:--------------------------------:|
-| ![original](data/video/original.gif) | ![transformed](data/video/demo.gif) |
+|             Original              |           Transformed            | Boxed |
+|:---------------------------------:|:--------------------------------:|:------|
+| ![original](data/video/original.gif) | ![transformed](data/video/demo.gif) | ![boxed](data/images/balloons_bounding_boxes.png) |
