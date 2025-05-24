@@ -4,7 +4,7 @@ from collections import deque
 logger = logging.getLogger(__name__)
 
 
-def bounding_boxes(frame: list[list[int]]) -> list[tuple[tuple]]:
+def bounding_boxes(frame):
     y_bound, x_bound = len(frame), len(frame[0])
     visited = set()
     boxes = []

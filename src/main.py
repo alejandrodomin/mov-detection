@@ -3,8 +3,8 @@ import logging
 
 import cv2
 
-from src.bounding import bounding_boxes
-from src.filter import mov_filter
+from bounding import bounding_boxes
+from filter import mov_filter
 
 logger = logging.getLogger(__name__)
 
