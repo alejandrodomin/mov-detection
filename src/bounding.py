@@ -7,7 +7,8 @@ logger = logging.getLogger(__name__)
 
 
 def bounding_boxes(frame):
-    step = 5
+    step = 20
+    threshold = 10
 
     y_bound, x_bound = len(frame), len(frame[0])
     visited = set()
@@ -16,7 +17,7 @@ def bounding_boxes(frame):
     for y in range(0, y_bound, step):
         for x in range(0, x_bound, step):
 
-            if __concentration(step, (x, y), frame) > 150 and (x, y) not in visited:
+            if __concentration(step, (x, y), frame) > threshold and (x, y) not in visited:
                 visited.add((x, y))
                 queue = deque([(x, y)])
 
@@ -25,13 +26,13 @@ def bounding_boxes(frame):
 
                 while queue:
                     coord = queue.popleft()
-                    for (ii, ri) in __valid_moves(coord, (x_bound, y_bound), visited):
-                        if frame[ri][ii] > 0:
-                            queue.append((ii, ri))
-                            visited.add((ii, ri))
+                    for move in __valid_moves(step, coord, (x_bound, y_bound), visited):
+                        if __concentration(step, move, frame) > threshold:
+                            queue.append(move)
+                            visited.add(move)
 
-                            top_left = (min(top_left[0], ii), min(top_left[1], ri))
-                            bot_rght = (max(bot_rght[0], ii), max(bot_rght[1], ri))
+                            top_left = (min(top_left[0], move[0]), min(top_left[1], move[1]))
+                            bot_rght = (max(bot_rght[0], move[0]), max(bot_rght[1], move[1]))
 
                 if top_left != (x_bound, y_bound) and bot_rght != (0, 0):
                     boxes.append((top_left, bot_rght))
@@ -39,13 +40,15 @@ def bounding_boxes(frame):
     return boxes
 
 
-def __valid_moves(coordinate: tuple, bounds: tuple, visited) -> list[tuple]:
+def __valid_moves(step, coordinate: tuple, bounds: tuple, visited) -> list[tuple]:
+    # TODO: implement a proximity value that would allow a certain sized casam to be considered
+    #       as part of the original object
     x, y = coordinate
     x_bound, y_bound = bounds
 
     v_moves = []
-    moves = [(x - 1, y - 1), (x, y - 1), (x + 1, y - 1), (x + 1, y),
-             (x + 1, y + 1), (x, y + 1), (x - 1, y + 1), (x - 1, y)]
+    moves = [(x - step, y - step), (x, y - step), (x + step, y - step), (x + step, y),
+             (x + step, y + step), (x, y + step), (x - step, y + step), (x - step, y)]
 
     for (x, y) in moves:
         if 0 <= x < x_bound and 0 <= y < y_bound and (x, y) not in visited:
