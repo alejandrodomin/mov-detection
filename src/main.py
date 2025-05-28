@@ -45,6 +45,7 @@ def main():
             break
 
         cv2.namedWindow('Boxed', cv2.WINDOW_NORMAL)
+        cv2.namedWindow('filter', cv2.WINDOW_NORMAL)
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         if last_frame is not None:
@@ -54,6 +55,7 @@ def main():
             for (top_left, bot_rght) in bounding_boxes(transformed_frame):
                 cv2.rectangle(boxed_frame, top_left, bot_rght, (0, 255, 0), 2)
 
+            cv2.imshow('filter', transformed_frame)
             cv2.imshow('Boxed', boxed_frame)
 
             if cv2.waitKey(1000 // fr) & 0xFF == ord('q'):

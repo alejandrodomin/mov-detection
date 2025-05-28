@@ -1,17 +1,22 @@
 import logging
 from collections import deque
 
+import numpy as np
+
 logger = logging.getLogger(__name__)
 
 
 def bounding_boxes(frame):
+    step = 5
+
     y_bound, x_bound = len(frame), len(frame[0])
     visited = set()
     boxes = []
 
-    for y, row in enumerate(frame):
-        for x, item in enumerate(row):
-            if item > 150 and (x, y) not in visited:
+    for y in range(0, y_bound, step):
+        for x in range(0, x_bound, step):
+
+            if __concentration(step, (x, y), frame) > 150 and (x, y) not in visited:
                 visited.add((x, y))
                 queue = deque([(x, y)])
 
@@ -28,7 +33,8 @@ def bounding_boxes(frame):
                             top_left = (min(top_left[0], ii), min(top_left[1], ri))
                             bot_rght = (max(bot_rght[0], ii), max(bot_rght[1], ri))
 
-                boxes.append((top_left, bot_rght))
+                if top_left != (x_bound, y_bound) and bot_rght != (0, 0):
+                    boxes.append((top_left, bot_rght))
 
     return boxes
 
@@ -46,6 +52,14 @@ def __valid_moves(coordinate: tuple, bounds: tuple, visited) -> list[tuple]:
             v_moves.append((x, y))
 
     return v_moves
+
+def __concentration(step, coordinate, matrix):
+    x, y = coordinate[0], coordinate[1]
+
+    submatrix = matrix[y:(y + step), x:(x + step)]
+    sub_sum = np.sum(submatrix)
+
+    return sub_sum / step ** 2
 
 if __name__=='__main__':
     matrix = [[0, 0, 0, 0, 0],
