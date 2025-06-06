@@ -174,3 +174,18 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 /.idea/
+
+# For the pixi manager
+target
+.idea
+.vscode
+.test-projects
+__pycache__
+.pixi
+.build
+.DS_store
+site/
+.cache
+pytest-temp
+/vendor
+pixi.lock
