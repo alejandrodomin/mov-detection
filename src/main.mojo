@@ -10,7 +10,6 @@ fn main():
     try:
         var balloons = Video("data/video/balloons.mp4")
 
-        for atom in balloons.atoms:
-            log.info(atom)
+        balloons.frames()
     except e:
         log.error("Failed with exception", e)

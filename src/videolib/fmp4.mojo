@@ -27,6 +27,29 @@ struct Video:
 
                 self.atoms.append(Atom(size, kind, data))
 
+    fn frames(self) -> List[List[UInt8]]:
+        moof: Atom 
+        for atom in self.atoms:
+            if atom.kind == "moof":
+                moof = atom
+        
+                traf: Atom
+                for atom in moof.subAtoms:
+                    if atom.kind == "traf":
+                        traf = atom
+
+                        for atom in traf.subAtoms:
+                            if atom.kind == "trun":
+                                print("trun", atom)
+                                print("trun version: ", atom.data[0])
+                                hexStr: String = ""
+                                for byte in atom.data[1:4]:
+                                    hexStr += hex(byte) + " "
+
+                                print("trun flags: ", hexStr)
+        return [] 
+          
+
 
 struct Atom(Stringable, Writable, Copyable, Movable):
     """Breakdown of the atom types within a fragmented MP4 formatted file.
@@ -41,6 +64,7 @@ struct Atom(Stringable, Writable, Copyable, Movable):
         |moof:
         |    - traf:
         |        - tfhd: track fragment header
+        |        - tfdt: decode timestamp
         |        - trun: information about sample count, size, duration, and offset
         |                   information used to know where the samples are in mdat
         |mdat:
