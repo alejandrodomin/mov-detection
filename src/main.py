@@ -69,6 +69,8 @@ def main():
     # IoU threshold (0-100 -> 0.0-1.0) and max missed frames
     cv2.createTrackbar("IoU Thresh", window_name, 30, 100, lambda x: None)
     cv2.createTrackbar("Max Missed", window_name, 5, 50, lambda x: None)
+    cv2.createTrackbar("Predict Frames", window_name, 3, 30, lambda x: None)
+    cv2.createTrackbar("Smooth", window_name, 50, 100, lambda x: None)
 
     last_frame = None
     # Tracker instance
@@ -105,9 +107,11 @@ def main():
         # Update tracker and get current tracks
         tracks = tracker.update(boxes, iou_threshold=iou_threshold, max_missed=max_missed)
 
-        # Draw tracks with consistent color per id
+        # Apply smoothing and draw tracks with consistent color per id
+        smooth_v = cv2.getTrackbarPos("Smooth", window_name) / 100.0
+        tracker.apply_smoothing(smooth_v)
         for tid, meta in tracks.items():
-            x, y, w, h = meta['bbox']
+            x, y, w, h = meta.get('smoothed', meta['bbox'])
             color = (int((tid * 97) % 256), int((tid * 193) % 256), int((tid * 71) % 256))
             cv2.rectangle(boxed_frame, (x, y), (x + w, y + h), color, 2)
             cv2.putText(
@@ -119,6 +123,36 @@ def main():
                 color,
                 1,
             )
+        # Draw predicted future positions
+        predict_steps = cv2.getTrackbarPos("Predict Frames", window_name)
+        if predict_steps > 0:
+            preds = tracker.predict_all(predict_steps)
+            for tid, (px, py, pw, ph) in preds.items():
+                pcolor = (int((tid * 97) % 256), int((tid * 193) % 256), int((tid * 71) % 256))
+                # make predicted color lighter (mix with white)
+                pcolor = tuple(min(255, int(c * 0.6 + 255 * 0.4)) for c in pcolor)
+                # predicted center
+                pcx = int(px + pw / 2)
+                pcy = int(py + ph / 2)
+                # current center from latest track bbox if available
+                cur = tracks.get(tid)
+                if cur is not None:
+                    cx = int(cur['bbox'][0] + cur['bbox'][2] / 2)
+                    cy = int(cur['bbox'][1] + cur['bbox'][3] / 2)
+                    # draw line from current center to predicted center
+                    cv2.line(boxed_frame, (cx, cy), (pcx, pcy), pcolor, 1)
+                # draw predicted center as circle (radius ~ quarter of bbox min dim)
+                radius = max(3, int(min(pw, ph) / 4))
+                cv2.circle(boxed_frame, (pcx, pcy), radius, pcolor, 2)
+                cv2.putText(
+                    boxed_frame,
+                    f"p{tid}",
+                    (pcx, pcy - radius - 4),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.4,
+                    pcolor,
+                    1,
+                )
         cv2.imshow(window_name, boxed_frame)
 
         if cv2.waitKey(1000 // fr) & 0xFF == ord("q"):

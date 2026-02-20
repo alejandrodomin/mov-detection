@@ -25,11 +25,12 @@ def _iou(boxA: Tuple[int, int, int, int], boxB: Tuple[int, int, int, int]) -> fl
 
 
 class Tracker:
-    def __init__(self, iou_threshold: float = 0.3, max_missed: int = 5):
-        self.tracks = {}  # id -> {'bbox': (x,y,w,h), 'missed': int}
+    def __init__(self, iou_threshold: float = 0.3, max_missed: int = 5, history_size: int = 5):
+        self.tracks = {}  # id -> {'bbox': (x,y,w,h), 'missed': int, 'history': [(cx,cy), ...]}
         self._next_id = 0
         self.iou_threshold = iou_threshold
         self.max_missed = max_missed
+        self.history_size = history_size
 
     def update(self, boxes: List[Tuple[int, int, int, int]], iou_threshold=None, max_missed=None):
         """Update tracker with newly detected boxes.
@@ -100,10 +101,21 @@ class Tracker:
         for tid, b_idx in matched.items():
             self.tracks[tid]['bbox'] = boxes[b_idx]
             self.tracks[tid]['missed'] = 0
+            # update centroid history
+            x, y, w, h = boxes[b_idx]
+            cx = int(x + w / 2)
+            cy = int(y + h / 2)
+            hist = self.tracks[tid].setdefault('history', [])
+            hist.append((cx, cy))
+            if len(hist) > self.history_size:
+                hist.pop(0)
 
         # Create new tracks
         for b_idx in sorted(unmatched_boxes):
-            self.tracks[self._next_id] = {'bbox': boxes[b_idx], 'missed': 0}
+            x, y, w, h = boxes[b_idx]
+            cx = int(x + w / 2)
+            cy = int(y + h / 2)
+            self.tracks[self._next_id] = {'bbox': boxes[b_idx], 'missed': 0, 'history': [(cx, cy)], 'smoothed': boxes[b_idx]}
             self._next_id += 1
 
         # Increase missed count for unmatched tracks and remove stale ones
@@ -116,3 +128,53 @@ class Tracker:
             del self.tracks[tid]
 
         return self.tracks
+
+    def apply_smoothing(self, alpha: float = 0.5):
+        """Apply exponential smoothing to each track's bbox in-place.
+
+        alpha: smoothing factor in [0,1]. Higher alpha => more weight to new bbox (less smoothing).
+        """
+        for tid, meta in self.tracks.items():
+            new = meta['bbox']
+            old = meta.get('smoothed', new)
+            smoothed = (
+                int(round(alpha * new[0] + (1 - alpha) * old[0])),
+                int(round(alpha * new[1] + (1 - alpha) * old[1])),
+                int(round(alpha * new[2] + (1 - alpha) * old[2])),
+                int(round(alpha * new[3] + (1 - alpha) * old[3])),
+            )
+            meta['smoothed'] = smoothed
+
+    def predict_all(self, steps: int = 1) -> dict:
+        """Predict future bbox for all tracks `steps` frames ahead.
+
+        Returns dict: id -> (x,y,w,h) predicted bbox
+        """
+        preds = {}
+        for tid, meta in self.tracks.items():
+            hist = meta.get('history', [])
+            if len(hist) < 2:
+                # Not enough history; predict same bbox
+                preds[tid] = meta['bbox']
+                continue
+            # compute average velocity over history deltas
+            deltas = []
+            for i in range(1, len(hist)):
+                dx = hist[i][0] - hist[i - 1][0]
+                dy = hist[i][1] - hist[i - 1][1]
+                deltas.append((dx, dy))
+            avg_dx = sum(d[0] for d in deltas) / len(deltas)
+            avg_dy = sum(d[1] for d in deltas) / len(deltas)
+            last_cx, last_cy = hist[-1]
+            pred_cx = int(last_cx + avg_dx * steps)
+            pred_cy = int(last_cy + avg_dy * steps)
+            # shift current bbox by predicted centroid delta
+            x, y, w, h = meta['bbox']
+            cur_cx = int(x + w / 2)
+            cur_cy = int(y + h / 2)
+            shift_x = pred_cx - cur_cx
+            shift_y = pred_cy - cur_cy
+            px = int(x + shift_x)
+            py = int(y + shift_y)
+            preds[tid] = (px, py, w, h)
+        return preds
